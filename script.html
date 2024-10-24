@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GangCoin</title>
+
+    <style>
+        /* General Styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            color: white;
+            background-color: black;
+            user-select: none; /* Prevent text selection */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+        }
+
+        main {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 60px;
+        }
+
+        /* Background */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80') 
+                no-repeat center center;
+            background-size: cover;
+            opacity: 0.1;
+            z-index: -1;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 10px 0;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .header h1 {
+            font-family: 'Lucida Calligraphy', cursive;
+            font-size: 32px;
+            margin: 0;
+            color: gold;
+        }
+
+        /* Statement */
+        .statement {
+            font-family: 'Lucida Calligraphy', cursive;
+            font-size: 20px;
+            text-align: center;
+            margin: 10px 0;
+            color: #ddd;
+        }
+
+        /* Stylish Coin */
+        .coin {
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, gold 60%, black);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px auto;
+            cursor: pointer;
+            font-size: 48px;
+            color: white;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 0 20px gold, inset 0 0 10px #fff;
+        }
+
+        .coin:active {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px white, inset 0 0 15px gold;
+        }
+
+        /* Coin Balance */
+        .coin-balance {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #ddd;
+        }
+
+        /* Pages with Borders */
+        .page {
+            display: none;
+            padding: 20px;
+            margin: 10px;
+            border: 2px solid gold;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            background-color: rgba(0, 0, 0, 0.9);
+            padding: 10px 0;
+        }
+
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            font-size: 16px;
+            color: white;
+        }
+
+        .nav-item span {
+            display: block;
+            font-size: 24px;
+        }
+
+        /* Task Item */
+        .task {
+            border: 2px solid gold;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const coin = document.getElementById('coin');
+            const coinBalance = document.getElementById('coin-balance');
+            const pages = document.querySelectorAll('.page');
+            const rankList = document.getElementById('rank-list');
+            let balance = parseInt(localStorage.getItem('coinBalance')) || 0;
+            let clickedTasks = new Set();
+            let userId = generateUserId();
+
+            function saveState() {
+                localStorage.setItem('coinBalance', balance);
+            }
+
+            function updateBalance() {
+                coinBalance.innerHTML = `<strong>Coin Balance:</strong> <strong style="font-size: 24px;">${balance}</strong>`;
+                updateRanking();
+            }
+
+            function generateUserId() {
+                const existingId = localStorage.getItem('userId');
+                if (existingId) return existingId;
+
+                const newId = Math.floor(Math.random() * 1000000);
+                localStorage.setItem('userId', newId);
+                return newId;
+            }
+
+            function updateRanking() {
+                let users = JSON.parse(localStorage.getItem('users') || '[]');
+                users = users.filter(u => u.id !== userId);
+                users.push({ id: userId, coins: balance });
+                users.sort((a, b) => b.coins - a.coins);
+                localStorage.setItem('users', JSON.stringify(users));
+
+                rankList.innerHTML = users.slice(0, 10).map(u => `<li>User ${u.id} - ${u.coins} coins</li>`).join('');
+            }
+
+            function handleCoinTap() {
+                balance++;
+                updateBalance();
+                saveState();
+            }
+
+            function handleTaskClick(taskId) {
+                if (!clickedTasks.has(taskId)) {
+                    clickedTasks.add(taskId);
+                    balance += 2000;
+                    updateBalance();
+                    saveState();
+                } else {
+                    alert("Task already completed!");
+                }
+            }
+
+            coin.addEventListener('click', handleCoinTap);
+            document.getElementById('task-telegram').addEventListener('click', () => handleTaskClick('telegram'));
+            document.getElementById('mine').addEventListener('click', () => switchPage('home-page'));
+            document.getElementById('friends').addEventListener('click', () => switchPage('friends-page'));
+            document.getElementById('tasks').addEventListener('click', () => switchPage('tasks-page'));
+            document.getElementById('rank').addEventListener('click', () => switchPage('rank-page'));
+
+            updateBalance();
+        });
+
+        function switchPage(targetId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+        }
+    </script>
+</head>
+<body>
+    <div class="background"></div>
+
+    <div class="header">
+        <h1>GangCoin</h1>
+    </div>
+
+    <div class="statement">
+        Maximum coins capped at 100B, Listing 2 weeks after mining the total amount
+    </div>
+
+    <main id="home-page" class="page active">
+        <div class="coin" id="coin">
+            <span>$GANG</span>
+        </div>
+        <div class="coin-balance" id="coin-balance"></div>
+    </main>
+
+    <section id="tasks-page" class="page">
+        <h2>Earn Coins</h2>
+        <div class="task" id="task-telegram">
+            <a href="https://t.me/gangcoinmjr" target="_blank">Follow GangCoin Telegram</a>
+        </div>
+    </section>
+
+    <section id="friends-page" class="page">
+        <h2>Friends</h2>
+        <p>Your Referral Link: <a href="#">http://t.me/M_GangBot?${generateUserId()}</a></p>
+    </section>
+
+    <section id="rank-page" class="page">
+        <h2>Top 10 Users</h2>
+        <ul id="rank-list"></ul>
+    </section>
+
+    <div class="bottom-nav">
+        <div class="nav-item" id="mine"><span>⛏️</span> Mine</div>
+        <div class="nav-item" id="friends"><span>🤗</span> Friends</div>
+        <div class="nav-item" id="tasks"><span>💲</span> Tasks</div>
+        <div class="nav-item" id="rank"><span>🪜</span> Ranking</div>
+    </div>
+</body>
+</html>
